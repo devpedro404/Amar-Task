@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreUserRequest;
+use Illuminate\Http\JsonResponse;use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -12,19 +12,30 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
-        $search = $request->input('search');
+        if (! $request->wantsJson()) {
+            return view('users.index');
+        }
 
         $users = User::query()
-            ->search($search)
+            ->search($request->input('search'))
             ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+            ->orderBy('id')
+            ->paginate(20);
 
-        return view('users.index', [
-            'users' => $users,
-            'search' => $search,
+        return response()->json([
+            'data' => $users->getCollection()->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_current' => $user->id === $request->user()->id,
+                'show_url' => route('users.show', $user),
+                'edit_url' => route('users.edit', $user),
+            ])->values(),
+            'current_page' => $users->currentPage(),
+            'last_page' => $users->lastPage(),
+            'total' => $users->total(),
         ]);
     }
 
@@ -76,11 +87,15 @@ class UserController extends Controller
             ->with('status', 'User updated successfully.');
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function destroy(Request $request, User $user): RedirectResponse|JsonResponse
     {
         $this->authorize('delete', $user);
 
         $user->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['deleted' => true]);
+        }
 
         return redirect()
             ->route('users.index')
