@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\JsonResponse;use App\Http\Requests\StoreUserRequest;
+use App\Actions\Users\CreateUser;
+use App\Actions\Users\UpdateUser;
+use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -53,12 +55,9 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(StoreUserRequest $request, CreateUser $createUser): RedirectResponse
     {
-        $data = $request->validated();
-        $data['password'] = Hash::make($data['password']);
-
-        User::create($data);
+        $createUser->execute($request->validated());
 
         return redirect()
             ->route('users.index')
@@ -70,17 +69,9 @@ class UserController extends Controller
         return view('users.edit', ['user' => $user]);
     }
 
-    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    public function update(UpdateUserRequest $request, User $user, UpdateUser $updateUser): RedirectResponse
     {
-        $data = $request->validated();
-
-        if (empty($data['password'])) {
-            unset($data['password']);
-        } else {
-            $data['password'] = Hash::make($data['password']);
-        }
-
-        $user->update($data);
+        $updateUser->execute($user, $request->validated());
 
         return redirect()
             ->route('users.index')

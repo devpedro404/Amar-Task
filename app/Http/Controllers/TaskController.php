@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Tasks\CreateTask;
+use App\Actions\Tasks\ToggleTaskCompletion;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Models\Task;
@@ -44,9 +46,9 @@ class TaskController extends Controller
         return view('tasks.create');
     }
 
-    public function store(StoreTaskRequest $request): RedirectResponse
+    public function store(StoreTaskRequest $request, CreateTask $createTask): RedirectResponse
     {
-        $request->user()->tasks()->create($request->validated());
+        $createTask->execute($request->user(), $request->validated());
 
         return redirect()
             ->route('tasks.index')
@@ -71,13 +73,11 @@ class TaskController extends Controller
             ->with('status', 'Task updated successfully.');
     }
 
-    public function toggle(Request $request, Task $task): RedirectResponse|JsonResponse
+    public function toggle(Request $request, Task $task, ToggleTaskCompletion $toggleTaskCompletion): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $task);
 
-        $task->update([
-            'completed_at' => $task->isCompleted() ? null : now(),
-        ]);
+        $toggleTaskCompletion->execute($task);
 
         if ($request->wantsJson()) {
             return response()->json(['completed' => $task->isCompleted()]);
