@@ -1,7 +1,7 @@
 <?php
 
 
-namespace pp\Http\Requests;
+namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -16,7 +16,7 @@ class StoreTaskRequest extends FormRequest
     {
         return [
             "title" => ['required', 'string', 'max:255'],
-            'description' => ['nullaable', 'string', 'max:1000'],
+            'description' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }
