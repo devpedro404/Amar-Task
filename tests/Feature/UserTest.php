@@ -107,4 +107,16 @@ class UserTest extends TestCase
 
         $this->assertDatabaseHas('users', ['id' => $admin->id]);
     }
+    
+    public function test_user_details_page_is_displayed(): void
+    {
+        $admin = User::factory()->create();
+        $user = User::factory()->create(['name' => 'Visible Person']);
+        Task::factory(2)->for($user)->create(['completed_at' => null]);
+
+        $this->actingAs($admin)->get("/users/{$user->id}")
+            ->assertOk()
+            ->assertSee('Visible Person')
+            ->assertSee($user->email);
+    }
 }

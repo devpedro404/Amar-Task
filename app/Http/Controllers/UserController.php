@@ -33,6 +33,15 @@ class UserController extends Controller
         return view('users.create');
     }
 
+    public function show(User $user): View
+    {
+        return view('users.show', [
+            'user' => $user,
+            'tasksCount' => $user->tasks()->count(),
+            'completedTasksCount' => $user->tasks()->whereNotNull('completed_at')->count(),
+        ]);
+    }
+
     public function store(StoreUserRequest $request): RedirectResponse
     {
         $data = $request->validated();
