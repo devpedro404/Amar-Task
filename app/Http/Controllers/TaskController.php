@@ -5,26 +5,37 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Models\Task;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class TaskController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
-        $search = $request->input('search');
+        if (! $request->wantsJson()) {
+            return view('tasks.index');
+        }
 
         $tasks = $request->user()
             ->tasks()
-            ->search($search)
+            ->search($request->input('search'))
             ->latest()
-            ->paginate(20)
-            ->withQueryString();
+            ->orderByDesc('id')
+            ->paginate(20);
 
-        return view('tasks.index', [
-            'tasks' => $tasks,
-            'search' => $search,
+        return response()->json([
+            'data' => $tasks->getCollection()->map(fn (Task $task) => [
+                'id' => $task->id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'completed' => $task->isCompleted(),
+                'edit_url' => route('tasks.edit', $task),
+            ])->values(),
+            'current_page' => $tasks->currentPage(),
+            'last_page' => $tasks->lastPage(),
+            'total' => $tasks->total(),
         ]);
     }
 
@@ -60,7 +71,7 @@ class TaskController extends Controller
             ->with('status', 'Task updated successfully.');
     }
 
-    public function toggle(Task $task): RedirectResponse
+    public function toggle(Request $request, Task $task): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $task);
 
@@ -68,14 +79,22 @@ class TaskController extends Controller
             'completed_at' => $task->isCompleted() ? null : now(),
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json(['completed' => $task->isCompleted()]);
+        }
+
         return back();
     }
 
-    public function destroy(Task $task): RedirectResponse
+    public function destroy(Request $request, Task $task): RedirectResponse|JsonResponse
     {
         $this->authorize('delete', $task);
 
         $task->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['deleted' => true]);
+        }
 
         return redirect()
             ->route('tasks.index')
