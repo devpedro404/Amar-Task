@@ -21,7 +21,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
     Route::resource('tasks', TaskController::class)->except('show');
 
-    Route::resource('users', UserController::class)->except('show');
+    Route::resource('users', UserController::class);
 });
 
 require __DIR__.'/auth.php';

@@ -36,10 +36,7 @@
                         <li class="flex items-center justify-between gap-4 py-4">
                             <div>
                                 <p class="font-medium text-gray-900">
-                                    {{ $user->name }}
-                                    @if ($user->id === auth()->id())
-                                        <span class="ml-2 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">You</span>
-                                    @endif
+                                    <a href="{{ route('users.show', $user) }}" class="hover:underline">{{ $user->name }}</a>
                                 </p>
                                 <p class="text-sm text-gray-500">{{ $user->email }}</p>
                             </div>
