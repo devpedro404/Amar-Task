@@ -17,16 +17,16 @@ class UserTest extends TestCase
         $this->get('/users')->assertRedirect('/login');
     }
 
-    public function test_users_are_listed_with_pagination_of_twenty(): void
+       public function test_users_are_listed_with_pagination_of_twenty(): void
     {
         $admin = User::factory()->create();
         User::factory(25)->create();
 
-        $response = $this->actingAs($admin)->get('/users');
-
-        $response->assertOk();
-        $this->assertCount(20, $response->viewData('users'));
-        $this->assertSame(26, $response->viewData('users')->total());
+        $this->actingAs($admin)->getJson('/users')
+            ->assertOk()
+            ->assertJsonCount(20, 'data')
+            ->assertJsonPath('total', 26)
+            ->assertJsonPath('last_page', 2);
     }
 
     public function test_users_can_be_searched(): void
@@ -35,9 +35,10 @@ class UserTest extends TestCase
         User::factory()->create(['name' => 'Zelda Searchable']);
         User::factory()->create(['name' => 'Someone Else']);
 
-        $response = $this->actingAs($admin)->get('/users?search=Zelda');
-
-        $this->assertCount(1, $response->viewData('users'));
+        $this->actingAs($admin)->getJson('/users?search=Zelda')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Zelda Searchable');
     }
 
     public function test_user_can_be_created_with_hashed_password(): void
